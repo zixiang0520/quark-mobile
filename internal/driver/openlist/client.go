@@ -46,9 +46,9 @@ type APIListResponse struct {
 }
 
 type APIGetResponse struct {
-	Code int       `json:"code"`
-	Data FileInfo  `json:"data"`
-	Msg  string    `json:"msg"`
+	Code int      `json:"code"`
+	Data FileInfo `json:"data"`
+	Msg  string   `json:"msg"`
 }
 
 type EmptyResponse struct {
@@ -110,7 +110,7 @@ func (c *Client) Login(ctx context.Context, username, password string) error {
 	}
 
 	var apiResp struct {
-		Code int    `json:"code"`
+		Code int `json:"code"`
 		Data struct {
 			Token string `json:"token"`
 		} `json:"data"`

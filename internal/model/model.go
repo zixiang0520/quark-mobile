@@ -27,7 +27,7 @@ type TransferRequest struct {
 }
 
 type TransferTask struct {
-	ID         string     `json:"id"`
+	ID           string     `json:"id"`
 	SourceDriver DriverType `json:"source_driver"`
 	SourcePath   string     `json:"source_path"`
 	TargetDriver DriverType `json:"target_driver"`
