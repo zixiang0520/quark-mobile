@@ -21,9 +21,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      image_tag: ${{ steps.meta.outputs.version }}
-      image_exists: ${{ steps.build.outputs.image_exists }}
 
     steps:
       - name: Checkout repository
@@ -60,6 +57,13 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.version=${{ github.event.pull_request.head.sha || github.sha }}
 
+      # 修复依赖（在 Docker 构建前）
+      - name: Fix Go dependencies
+        run: |
+          go mod tidy
+          go mod download
+          cat go.sum | head -20
+
       - name: Build and push (amd64)
         id: build-amd64
         uses: docker/build-push-action@v5
@@ -83,16 +87,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Build multi-arch manifest
-        if: github.event_name != 'pull_request'
-        run: |
-          echo "Merging manifests for multi-arch support..."
-          docker buildx imagetools create \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            --manifest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64 \
-            --manifest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-arm64 || true
-          echo "Multi-arch manifest created successfully"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
