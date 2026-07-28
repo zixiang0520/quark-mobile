@@ -28,6 +28,7 @@ func NewRouter(taskMgr *task.Manager, transferSvc *service.TransferService) *Rou
 }
 
 func (r *Router) setupRoutes() {
+	// API路由
 	api := r.router.Group("/api")
 	{
 		// 驱动列表
@@ -43,13 +44,22 @@ func (r *Router) setupRoutes() {
 		api.DELETE("/tasks/:id", r.cancelTask)
 	}
 
-	// 静态文件（前端）
-	r.router.Static("/", "./web/dist")
+	// 静态文件服务（前端）
+	r.router.StaticFS("/web", http.Dir("./web/dist"))
+
+	// SPA回退处理
 	r.router.NoRoute(func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/api") {
+		path := c.Request.URL.Path
+		if strings.HasPrefix(path, "/api") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
+		// 检查是否为静态资源
+		if strings.HasPrefix(path, "/web/") || strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".ico") || strings.HasSuffix(path, ".svg") {
+			c.File("./web/dist" + path)
+			return
+		}
+		// SPA回退：返回index.html
 		c.File("./web/dist/index.html")
 	})
 }
