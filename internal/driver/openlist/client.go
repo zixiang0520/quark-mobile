@@ -20,7 +20,6 @@ type Client struct {
 
 type FileInfo struct {
 	Name     string    `json:"name"`
-	Path     string    `json:"path"`
 	Size     int64     `json:"size"`
 	IsDir    bool      `json:"is_dir"`
 	Sign     string    `json:"sign,omitempty"`
@@ -34,26 +33,26 @@ type ListResponse struct {
 }
 
 type APIResponse struct {
-	Code int         `json:"code"`
-	Data interface{} `json:"data"`
-	Msg  string      `json:"msg"`
+	Code    int         `json:"code"`
+	Data    interface{} `json:"data"`
+	Message string      `json:"message"`
 }
 
 type APIListResponse struct {
-	Code int          `json:"code"`
-	Data ListResponse `json:"data"`
-	Msg  string       `json:"msg"`
+	Code    int          `json:"code"`
+	Data    ListResponse `json:"data"`
+	Message string       `json:"message"`
 }
 
 type APIGetResponse struct {
-	Code int      `json:"code"`
-	Data FileInfo `json:"data"`
-	Msg  string   `json:"msg"`
+	Code    int      `json:"code"`
+	Data    FileInfo `json:"data"`
+	Message string   `json:"message"`
 }
 
 type EmptyResponse struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 func NewClient(baseURL string, token string) *Client {
@@ -104,25 +103,25 @@ func (c *Client) Login(ctx context.Context, username, password string) error {
 		"password": password,
 	}
 
-	respData, err := c.doRequest(ctx, "POST", "/auth/login", body)
+	respData, err := c.doRequest(ctx, "POST", "/api/auth/login", body)
 	if err != nil {
 		return err
 	}
 
 	var apiResp struct {
-		Code int `json:"code"`
-		Data struct {
+		Code    int    `json:"code"`
+		Data    struct {
 			Token string `json:"token"`
 		} `json:"data"`
-		Msg string `json:"msg"`
+		Message string `json:"message"`
 	}
 
 	if err := json.Unmarshal(respData, &apiResp); err != nil {
 		return fmt.Errorf("parse login response: %w", err)
 	}
 
-	if apiResp.Code != 0 {
-		return fmt.Errorf("login failed: %s", apiResp.Msg)
+	if apiResp.Code != 200 {
+		return fmt.Errorf("login failed: %s", apiResp.Message)
 	}
 
 	c.Token = apiResp.Data.Token
@@ -147,8 +146,8 @@ func (c *Client) ListFiles(ctx context.Context, path string) ([]port.FileInfo, e
 		return nil, fmt.Errorf("parse list response: %w", err)
 	}
 
-	if listResp.Code != 0 {
-		return nil, fmt.Errorf("list failed: %s", listResp.Msg)
+	if listResp.Code != 200 {
+		return nil, fmt.Errorf("list failed: %s", listResp.Message)
 	}
 
 	result := make([]port.FileInfo, 0, len(listResp.Data.Content))
@@ -183,14 +182,14 @@ func (c *Client) GetFileInfo(ctx context.Context, path string) (*port.FileInfo, 
 		return nil, fmt.Errorf("parse get response: %w", err)
 	}
 
-	if getResp.Code != 0 {
-		return nil, fmt.Errorf("get failed: %s", getResp.Msg)
+	if getResp.Code != 200 {
+		return nil, fmt.Errorf("get failed: %s", getResp.Message)
 	}
 
 	// 转换为 port.FileInfo
 	return &port.FileInfo{
 		Name:   getResp.Data.Name,
-		Path:   getResp.Data.Path,
+		Path:   path,
 		Size:   getResp.Data.Size,
 		IsDir:  getResp.Data.IsDir,
 		SHA256: getResp.Data.Sign,
@@ -214,8 +213,8 @@ func (c *Client) GetRawFileInfo(ctx context.Context, path string) (*FileInfo, er
 		return nil, fmt.Errorf("parse get response: %w", err)
 	}
 
-	if getResp.Code != 0 {
-		return nil, fmt.Errorf("get failed: %s", getResp.Msg)
+	if getResp.Code != 200 {
+		return nil, fmt.Errorf("get failed: %s", getResp.Message)
 	}
 
 	return &getResp.Data, nil
@@ -242,8 +241,8 @@ func (c *Client) CopyFile(ctx context.Context, srcDir, srcName, dstDir string) e
 		return fmt.Errorf("parse copy response: %w", err)
 	}
 
-	if emptyResp.Code != 0 {
-		return fmt.Errorf("copy failed: %s", emptyResp.Msg)
+	if emptyResp.Code != 200 {
+		return fmt.Errorf("copy failed: %s", emptyResp.Message)
 	}
 
 	return nil
@@ -270,8 +269,8 @@ func (c *Client) MoveFile(ctx context.Context, srcDir, srcName, dstDir string) e
 		return fmt.Errorf("parse move response: %w", err)
 	}
 
-	if emptyResp.Code != 0 {
-		return fmt.Errorf("move failed: %s", emptyResp.Msg)
+	if emptyResp.Code != 200 {
+		return fmt.Errorf("move failed: %s", emptyResp.Message)
 	}
 
 	return nil
@@ -294,8 +293,8 @@ func (c *Client) Mkdir(ctx context.Context, path string) error {
 		return fmt.Errorf("parse mkdir response: %w", err)
 	}
 
-	if emptyResp.Code != 0 {
-		return fmt.Errorf("mkdir failed: %s", emptyResp.Msg)
+	if emptyResp.Code != 200 {
+		return fmt.Errorf("mkdir failed: %s", emptyResp.Message)
 	}
 
 	return nil
@@ -319,8 +318,8 @@ func (c *Client) RemoveFile(ctx context.Context, dir string, names []string) err
 		return fmt.Errorf("parse remove response: %w", err)
 	}
 
-	if emptyResp.Code != 0 {
-		return fmt.Errorf("remove failed: %s", emptyResp.Msg)
+	if emptyResp.Code != 200 {
+		return fmt.Errorf("remove failed: %s", emptyResp.Message)
 	}
 
 	return nil

@@ -5,18 +5,18 @@ server:
 # OpenList 配置
 openlist:
   # OpenList 服务地址
-  base_url: "http://localhost:5244"
+  base_url: "http://vip.dsj6.cn:5244"
   # OpenList 登录账号（用于获取 token）
   # 支持环境变量覆盖: OL_USERNAME
-  username: "admin"
+  username: "lk0520"
   # OpenList 登录密码
   # 支持环境变量覆盖: OL_PASSWORD
   # 建议使用环境变量而不是明文存储
-  password: ""
-  # 挂载点配置
+  password: "ZXliukai123"
+  # 挂载点配置（根据 OpenList 实际挂载点修改）
   mounts:
-    quark: "/quark"
-    mobile: "/mobile"
+    quark: "/移动云盘"
+    mobile: "/移动云盘"
 
 # 传输配置
 transfer:
