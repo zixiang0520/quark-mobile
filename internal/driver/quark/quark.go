@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/spf13/viper"
+
 	"quark-mobile/internal/driver/openlist"
 	"quark-mobile/internal/model"
 	"quark-mobile/internal/port"
-
-	"github.com/spf13/viper"
 )
 
 // 确保实现了 port.Driver 接口

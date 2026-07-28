@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"quark-mobile/internal/driver"
 	"quark-mobile/internal/model"
 	"quark-mobile/internal/port"
-
-	"github.com/spf13/viper"
 )
 
 type TransferService struct{}

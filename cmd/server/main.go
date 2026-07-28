@@ -7,14 +7,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+
 	"quark-mobile/internal/api"
 	"quark-mobile/internal/driver"
 	"quark-mobile/internal/driver/openlist"
 	"quark-mobile/internal/service"
 	"quark-mobile/internal/task"
-
-	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 )
 
 func main() {

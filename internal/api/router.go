@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	"quark-mobile/internal/driver"
 	"quark-mobile/internal/model"
 	"quark-mobile/internal/service"
 	"quark-mobile/internal/task"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Router struct {
