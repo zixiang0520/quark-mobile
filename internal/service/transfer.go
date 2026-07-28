@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"quark-mobile/internal/driver"
-	"quark-mobile/internal/driver/openlist"
 	"quark-mobile/internal/model"
 	"quark-mobile/internal/port"
 
