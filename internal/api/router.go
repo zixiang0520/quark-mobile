@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"quark-mobile/internal/config"
 	"quark-mobile/internal/driver"
 	"quark-mobile/internal/model"
 	"quark-mobile/internal/service"
@@ -12,36 +13,69 @@ import (
 )
 
 type Router struct {
-	router      *gin.Engine
-	taskMgr     *task.Manager
-	transferSvc *service.TransferService
+	router       *gin.Engine
+	taskMgr      *task.Manager
+	transferSvc  *service.TransferService
+	cfgMgr       *config.Manager
+	settingsHdl  *SettingsHandler
 }
 
-func NewRouter(taskMgr *task.Manager, transferSvc *service.TransferService) *Router {
+func NewRouter(taskMgr *task.Manager, transferSvc *service.TransferService, cfgMgr *config.Manager) *Router {
+	settingsHdl := NewSettingsHandler(cfgMgr)
+
 	r := &Router{
 		router:      gin.Default(),
 		taskMgr:     taskMgr,
 		transferSvc: transferSvc,
+		cfgMgr:      cfgMgr,
+		settingsHdl: settingsHdl,
 	}
+	r.setupMiddleware()
 	r.setupRoutes()
 	return r
 }
 
+func (r *Router) setupMiddleware() {
+	// 添加 CORS 中间件
+	r.router.Use(CORSMiddleware())
+	// 添加安全头中间件
+	r.router.Use(SecurityHeadersMiddleware())
+}
+
 func (r *Router) setupRoutes() {
-	// API路由
+	// 公开路由（不需要认证）
 	api := r.router.Group("/api")
 	{
+		// 登录/登出
+		api.POST("/login", RateLimitMiddleware(5)(func(c *gin.Context) {
+			r.settingsHdl.Login(c)
+		}))
+		api.POST("/logout", r.settingsHdl.Logout)
+
+		// 测试连接（不需要认证）
+		api.POST("/settings/test", r.settingsHdl.TestConnection)
+	}
+
+	// 需要认证的路由
+	apiProtected := r.router.Group("/api")
+	apiProtected.Use(AuthMiddleware(r.cfgMgr))
+	{
+		// 配置管理
+		apiProtected.GET("/settings", r.settingsHdl.GetSettings)
+		apiProtected.POST("/settings", r.settingsHdl.SaveSettings)
+		apiProtected.POST("/settings/password", r.settingsHdl.ChangePassword)
+
 		// 驱动列表
-		api.GET("/drivers", r.listDrivers)
+		apiProtected.GET("/drivers", r.listDrivers)
 
 		// 文件浏览
-		api.GET("/files/:driver", r.listFiles)
+		apiProtected.GET("/files/:driver", r.listFiles)
 
 		// 传输任务
-		api.POST("/transfer", r.createTransfer)
-		api.GET("/tasks", r.listTasks)
-		api.GET("/tasks/:id", r.getTask)
-		api.DELETE("/tasks/:id", r.cancelTask)
+		apiProtected.POST("/transfer", r.createTransfer)
+		apiProtected.GET("/tasks", r.listTasks)
+		apiProtected.GET("/tasks/:id", r.getTask)
+		apiProtected.DELETE("/tasks/:id", r.cancelTask)
 	}
 
 	// SPA回退处理（在NoRoute中处理静态文件和前端路由）

@@ -257,11 +257,44 @@ body {
   padding: 40px;
 }
 
+/* 头部操作按钮 */
+.app-header .header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-header .action-buttons-header {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-config,
+.btn-logout {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-config:hover,
+.btn-logout:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 @media (max-width: 768px) {
   .panels-row {
     flex-direction: column;
   }
   .arrow {
     transform: rotate(90deg);
+  }
+  .app-header .header-actions {
+    flex-direction: column;
+    gap: 12px;
   }
 }

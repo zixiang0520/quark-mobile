@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"quark-mobile/internal/api"
+	"quark-mobile/internal/config"
 	"quark-mobile/internal/driver"
 	"quark-mobile/internal/driver/openlist"
 	"quark-mobile/internal/service"
@@ -22,6 +23,9 @@ func main() {
 	if configPath == "" {
 		configPath = "config.yaml"
 	}
+
+	// 初始化配置管理器
+	cfgMgr := config.NewManager(configPath)
 
 	viper.SetConfigFile(configPath)
 	viper.SetEnvPrefix("")
@@ -71,10 +75,15 @@ func main() {
 		}
 	}
 
-	// 初始化 OpenList 客户端
-	openlistURL := viper.GetString("openlist.base_url")
-	openlistUser := viper.GetString("openlist.username")
-	openlistPass := viper.GetString("openlist.password")
+	// 初始化 OpenList 客户端（从配置管理器获取解密后的密码）
+	olConfig, err := cfgMgr.GetOpenListConfig()
+	if err != nil {
+		log.Printf("⚠️  Failed to get OpenList config: %v", err)
+	}
+
+	openlistURL := olConfig.BaseURL
+	openlistUser := olConfig.Username
+	openlistPass := olConfig.Password
 
 	olClient := openlist.NewClient(openlistURL, "")
 
@@ -100,13 +109,13 @@ func main() {
 
 	// 启动 HTTP 服务
 	addr := fmt.Sprintf(":%d", viper.GetInt("server.port"))
-	router := api.NewRouter(taskMgr, transferSvc)
+	router := api.NewRouter(taskMgr, transferSvc, cfgMgr)
 
 	log.Printf("🚀 Quark-Mobile Transfer Server starting on %s", addr)
 	log.Printf("   OpenList: %s", openlistURL)
 	log.Printf("   Mounts: quark=%s, mobile=%s",
-		viper.GetString("openlist.mounts.quark"),
-		viper.GetString("openlist.mounts.mobile"))
+		olConfig.Mounts.Quark,
+		olConfig.Mounts.Mobile)
 	log.Printf("   Max concurrent: %d", viper.GetInt("transfer.max_concurrent"))
 
 	if err := router.Run(addr); err != nil {
