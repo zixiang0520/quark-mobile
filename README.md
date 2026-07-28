@@ -43,15 +43,73 @@
 
 ### 方式一：Docker Compose（推荐）
 
+1. 创建 `docker-compose.yml` 文件：
+
+```yaml
+version: '3.8'
+
+services:
+  quark-mobile:
+    image: ghcr.io/zixiang0520/quark-mobile:latest
+    container_name: quark-mobile
+    
+    # 端口映射
+    ports:
+      - "18900:18900"
+    
+    # 数据持久化
+    volumes:
+      - quark-mobile-data:/data
+    
+    # 环境变量配置
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+      - GIN_MODE=release
+      - TZ=Asia/Shanghai
+      # OpenList 连接配置（修改为你的实际配置）
+      - OL_BASE_URL=http://your-openlist:5244
+      - OL_USERNAME=admin
+      - OL_PASSWORD=your_openlist_password
+      # 挂载路径
+      - OL_MOUNT_QUARK=/quark
+      - OL_MOUNT_MOBILE=/mobile
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:18900/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    
+    networks:
+      - quark-mobile-net
+
+networks:
+  quark-mobile-net:
+    driver: bridge
+
+volumes:
+  quark-mobile-data:
+    driver: local
+```
+
+2. 启动服务：
+
 ```bash
-# 1. 创建并编辑 docker-compose.yml
-# 2. 启动服务
 docker compose up -d
+```
 
-# 3. 查看日志
+3. 查看日志：
+
+```bash
 docker compose logs -f
+```
 
-# 4. 停止服务
+4. 停止服务：
+
+```bash
 docker compose down
 ```
 

@@ -2,48 +2,48 @@ version: '3.8'
 
 services:
   quark-mobile:
-    # 方式1: 使用远程镜像（推荐，简单快速）
+    # 使用远程镜像
     image: ghcr.io/zixiang0520/quark-mobile:latest
-    # 方式2: 本地构建（取消下面注释，注释掉上面的image行）
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
-    #   platforms:
-    #     - linux/amd64
-    #     - linux/arm64
-    
     container_name: quark-mobile
+    
+    # 端口映射
     ports:
       - "18900:18900"
+    
+    # 数据持久化
     volumes:
-      # 配置文件（只读挂载，可选）
-      # - ./config.yaml:/app/config.yaml:ro
-      # 数据持久化目录
       - quark-mobile-data:/data
+    
+    # 环境变量配置
     environment:
+      # 服务器配置
       - CONFIG_PATH=/app/config.yaml
       - GIN_MODE=release
       - TZ=Asia/Shanghai
-      # OpenList 连接配置（根据实际情况修改）
-      - OL_BASE_URL=http://your-openlist:5244
-      - OL_USERNAME=admin
-      - OL_PASSWORD=your_openlist_password
-      # 挂载路径（可选）
-      # - OL_MOUNT_QUARK=/quark
-      # - OL_MOUNT_MOBILE=/mobile
+      
+      # OpenList 连接配置
+      - OL_BASE_URL=http://vip.dsj6.cn:5244
+      - OL_USERNAME=lk0520
+      - OL_PASSWORD=ZXliukai123
+      
+      # 挂载路径
+      - OL_MOUNT_QUARK=/quark
+      - OL_MOUNT_MOBILE=/mobile
+    
+    # 自动重启
     restart: unless-stopped
+    
+    # 健康检查
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:18900/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+    
+    # 网络配置
     networks:
       - quark-mobile-net
-    # 如果 OpenList 在同一台机器上，取消下面注释添加网络
-    # networks:
-    #   - quark-mobile-net
-    #   - openlist-net
 
 networks:
   quark-mobile-net:
