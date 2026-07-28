@@ -44,10 +44,7 @@ func (r *Router) setupRoutes() {
 		api.DELETE("/tasks/:id", r.cancelTask)
 	}
 
-	// 静态文件服务（前端）
-	r.router.StaticFS("/web", http.Dir("./web/dist"))
-
-	// SPA回退处理
+	// SPA回退处理（在NoRoute中处理静态文件和前端路由）
 	r.router.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
 		if strings.HasPrefix(path, "/api") {
@@ -55,7 +52,7 @@ func (r *Router) setupRoutes() {
 			return
 		}
 		// 检查是否为静态资源
-		if strings.HasPrefix(path, "/web/") || strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".ico") || strings.HasSuffix(path, ".svg") {
+		if strings.HasPrefix(path, "/web/") || strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".ico") || strings.HasSuffix(path, ".svg") || strings.HasSuffix(path, ".map") {
 			c.File("./web/dist" + path)
 			return
 		}
