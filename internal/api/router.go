@@ -45,16 +45,22 @@ func (r *Router) setupMiddleware() {
 func (r *Router) setupRoutes() {
 	// 公开路由（不需要认证）
 	api := r.router.Group("/api")
+	
+	// 健康检查（不需要认证）
+	api.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+	
+	// 登录/登出 - 添加速率限制
+	loginAPI := api.Group("")
+	loginAPI.Use(RateLimitMiddleware(5))
 	{
-		// 登录/登出
-		api.POST("/login", RateLimitMiddleware(5)(func(c *gin.Context) {
-			r.settingsHdl.Login(c)
-		}))
-		api.POST("/logout", r.settingsHdl.Logout)
-
-		// 测试连接（不需要认证）
-		api.POST("/settings/test", r.settingsHdl.TestConnection)
+		loginAPI.POST("/login", r.settingsHdl.Login)
 	}
+	api.POST("/logout", r.settingsHdl.Logout)
+
+	// 测试连接（不需要认证）
+	api.POST("/settings/test", r.settingsHdl.TestConnection)
 
 	// 需要认证的路由
 	apiProtected := r.router.Group("/api")

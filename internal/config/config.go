@@ -54,6 +54,7 @@ type Manager struct {
 	mu          sync.RWMutex
 	config      *Config
 	filePath    string
+	writePath   string // 实际写入路径（可能与读取路径不同）
 	adminPass   string // bcrypt hash
 	sessions    map[string]*Session
 	encryptionKey []byte
@@ -84,8 +85,19 @@ func init() {
 // NewManager 创建配置管理器
 func NewManager(configPath string) *Manager {
 	m := &Manager{
-		filePath: configPath,
-		sessions: make(map[string]*Session),
+		filePath:  configPath,
+		writePath: configPath,
+		sessions:  make(map[string]*Session),
+	}
+
+	// 检查配置文件路径是否可写，否则使用 /data 目录
+	if !m.canWrite(configPath) {
+		m.writePath = "/data/config.yaml"
+		// 如果原始配置文件存在，复制它
+		if data, err := os.ReadFile(configPath); err == nil {
+			os.MkdirAll("/data", 0755)
+			os.WriteFile(m.writePath, data, 0600)
+		}
 	}
 
 	// 生成或加载加密密钥
@@ -100,9 +112,34 @@ func NewManager(configPath string) *Manager {
 	return m
 }
 
+// canWrite 检查路径是否可写
+func (m *Manager) canWrite(path string) bool {
+	dir := filepath.Dir(path)
+	info, err := os.Stat(dir)
+	if err != nil {
+		return false
+	}
+	// 检查目录权限
+	if info.Mode().Perm()&0200 == 0 {
+		return false
+	}
+	// 尝试创建临时文件测试
+	tmpFile := filepath.Join(dir, ".write_test")
+	if err := os.WriteFile(tmpFile, []byte("test"), 0600); err != nil {
+		return false
+	}
+	os.Remove(tmpFile)
+	return true
+}
+
 // loadOrCreateEncryptionKey 加载或创建加密密钥
 func (m *Manager) loadOrCreateEncryptionKey() []byte {
-	keyFile := filepath.Join(filepath.Dir(m.filePath), ".encryption_key")
+	// 使用 /data 目录存储密钥（有写入权限）
+	keyDir := "/data"
+	keyFile := filepath.Join(keyDir, ".encryption_key")
+	
+	// 确保目录存在
+	os.MkdirAll(keyDir, 0755)
 	
 	data, err := os.ReadFile(keyFile)
 	if err == nil && len(data) == 32 {
@@ -124,7 +161,9 @@ func (m *Manager) loadOrCreateEncryptionKey() []byte {
 
 // loadOrCreateAdminPassword 加载或创建管理员密码
 func (m *Manager) loadOrCreateAdminPassword() string {
-	passFile := filepath.Join(filepath.Dir(m.filePath), ".admin_pass")
+	// 使用 /data 目录存储密码（有写入权限）
+	passDir := "/data"
+	passFile := filepath.Join(passDir, ".admin_pass")
 	
 	data, err := os.ReadFile(passFile)
 	if err == nil {
@@ -246,7 +285,10 @@ func (m *Manager) saveToFile() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(m.filePath, data, 0600)
+	// 使用 writePath 保存配置
+	dir := filepath.Dir(m.writePath)
+	os.MkdirAll(dir, 0755)
+	return os.WriteFile(m.writePath, data, 0600)
 }
 
 // encrypt 加密数据
@@ -292,8 +334,8 @@ func (m *Manager) decrypt(ciphertext string) (string, error) {
 		return "", fmt.Errorf("ciphertext too short")
 	}
 
-	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	nonce, encrypted := data[:nonceSize], data[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, encrypted, nil)
 	if err != nil {
 		return "", err
 	}
@@ -360,7 +402,8 @@ func (m *Manager) ChangePassword(oldPass, newPass string) error {
 	hashedPass := hashPassword(newPass)
 	m.adminPass = hashedPass
 
-	passFile := filepath.Join(filepath.Dir(m.filePath), ".admin_pass")
+	// 使用 /data 目录存储密码
+	passFile := filepath.Join("/data", ".admin_pass")
 	return os.WriteFile(passFile, []byte(hashedPass), 0600)
 }
 

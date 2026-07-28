@@ -64,12 +64,11 @@ function BindingPage({ onLogout }) {
   }
 
   const updateField = (path, value) => {
-    const newConfig = { ...config }
     const keys = path.split('.')
+    const newConfig = JSON.parse(JSON.stringify(config))
     let obj = newConfig
     for (let i = 0; i < keys.length - 1; i++) {
-      obj = { ...obj[keys[i]] }
-      obj[keys[i]] = obj[keys[i]]
+      obj = obj[keys[i]]
     }
     obj[keys[keys.length - 1]] = value
     setConfig(newConfig)
@@ -114,7 +113,9 @@ function BindingPage({ onLogout }) {
         body: JSON.stringify({
           base_url: config.openlist.base_url,
           username: config.openlist.username,
-          password: showPassword ? config.openlist.password : '',
+          // 如果密码是脱敏后的 ******，说明已经保存过，使用后端存储的密码
+          // 否则使用用户输入的密码
+          password: config.openlist.password === '******' ? '' : config.openlist.password,
         }),
       })
 

@@ -33,7 +33,7 @@ services:
       # - OL_MOUNT_MOBILE=/mobile
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:18900/api/drivers"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:18900/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3

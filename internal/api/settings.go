@@ -113,12 +113,20 @@ func (h *SettingsHandler) TestConnection(c *gin.Context) {
 		return
 	}
 
+	// 如果前端没有发送密码，尝试从已保存的配置中获取
+	password := req.Password
+	if password == "" || password == "******" {
+		if savedConfig, err := h.cfgMgr.GetOpenListConfig(); err == nil && savedConfig.Password != "" {
+			password = savedConfig.Password
+		}
+	}
+
 	// 创建 OpenList 客户端并测试连接
 	client := openlist.NewClient(req.BaseURL, "")
 	ctx := context.Background()
 
-	if req.Password != "" {
-		if err := client.Login(ctx, req.Username, req.Password); err != nil {
+	if password != "" {
+		if err := client.Login(ctx, req.Username, password); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"connected": false,
 				"error":     err.Error(),
