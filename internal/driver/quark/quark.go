@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/spf13/viper"
-
 	"quark-mobile/internal/driver/openlist"
 	"quark-mobile/internal/model"
 	"quark-mobile/internal/port"
