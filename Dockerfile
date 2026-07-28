@@ -60,11 +60,11 @@ RUN mkdir -p /data/cache && \
 USER appuser
 
 # 暴露端口
-EXPOSE 8080
+EXPOSE 18900
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://localhost:8080/api/drivers || exit 1
+    CMD wget -qO- http://localhost:18900/api/drivers || exit 1
 
 # 环境变量默认值
 ENV CONFIG_PATH=/app/config.yaml

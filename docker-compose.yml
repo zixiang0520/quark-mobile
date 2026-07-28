@@ -14,7 +14,7 @@ services:
     
     container_name: quark-mobile
     ports:
-      - "8080:8080"
+      - "18900:18900"
     volumes:
       # 配置文件（只读挂载，可选）
       # - ./config.yaml:/app/config.yaml:ro
@@ -33,7 +33,7 @@ services:
       # - OL_MOUNT_MOBILE=/mobile
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/drivers"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:18900/api/drivers"]
       interval: 30s
       timeout: 5s
       retries: 3

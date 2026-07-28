@@ -56,18 +56,18 @@ docker-build-multi:
 docker-run:
 	@echo "🚀 启动容器..."
 	docker run -d \
-		-p 8080:8080 \
+		-p 18900:18900 \
 		-v $(shell pwd)/config.yaml:/app/config.yaml:ro \
 		-v quark-mobile-data:/data \
 		--name $(APP_NAME) \
 		--restart unless-stopped \
 		$(IMAGE_NAME):$(IMAGE_TAG)
-	@echo "✅ 容器已启动: http://localhost:8080"
+	@echo "✅ 容器已启动: http://localhost:18900"
 
 docker-run-env:
 	@echo "🚀 启动容器（使用环境变量配置）..."
 	docker run -d \
-		-p 8080:8080 \
+		-p 18900:18900 \
 		-e OL_BASE_URL=$(OL_BASE_URL) \
 		-e OL_USERNAME=$(OL_USERNAME) \
 		-e OL_PASSWORD=$(OL_PASSWORD) \
