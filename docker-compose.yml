@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  quark-mobile:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # 多架构构建支持
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    container_name: quark-mobile
+    ports:
+      - "8080:8080"
+    volumes:
+      # 配置文件（只读挂载）
+      - ./config.yaml:/app/config.yaml:ro
+      # 数据持久化目录
+      - quark-mobile-data:/data
+      # 如果需要通过本地路径访问 OpenList 文件系统
+      # - /path/to/openlist-data:/mnt/openlist:ro
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+      - GIN_MODE=release
+      # OpenList 连接配置（优先级高于 config.yaml）
+      # - OL_BASE_URL=http://openlist:5244
+      # - OL_USERNAME=admin
+      # - OL_PASSWORD=your_password
+      # - OL_MOUNT_QUARK=/quark
+      # - OL_MOUNT_MOBILE=/mobile
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/drivers"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - quark-mobile-net
+    # 如果 OpenList 在同一台机器上，可以添加网络
+    # networks:
+    #   - quark-mobile-net
+    #   - openlist-net
+
+networks:
+  quark-mobile-net:
+    driver: bridge
+
+volumes:
+  quark-mobile-data:
+    driver: local

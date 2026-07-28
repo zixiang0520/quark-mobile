@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# Binaries
+/server
+*.exe
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+web/node_modules
+web/dist
+
+# Data
+data/
+*.db
+*.log
+
+# Config
+config.local.yaml

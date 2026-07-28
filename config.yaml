@@ -1,0 +1,25 @@
+server:
+  port: 8080
+  mode: debug
+
+# OpenList 配置
+openlist:
+  # OpenList 服务地址
+  base_url: "http://localhost:5244"
+  # OpenList 登录账号（用于获取 token）
+  # 支持环境变量覆盖: OL_USERNAME
+  username: "admin"
+  # OpenList 登录密码
+  # 支持环境变量覆盖: OL_PASSWORD
+  # 建议使用环境变量而不是明文存储
+  password: ""
+  # 挂载点配置
+  mounts:
+    quark: "/quark"
+    mobile: "/mobile"
+
+# 传输配置
+transfer:
+  max_concurrent: 4
+  cache_dir: "/data/cache"
+  timeout: 60

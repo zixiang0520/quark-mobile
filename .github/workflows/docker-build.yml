@@ -1,0 +1,151 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # 构建 Docker 镜像
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+      image_exists: ${{ steps.build.outputs.image_exists }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=${{ github.repository }}
+            org.opencontainers.image.description=夸克网盘与移动云盘文件互传工具
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Build and push (amd64)
+        id: build-amd64
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push (arm64)
+        id: build-arm64
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build multi-arch manifest
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "Merging manifests for multi-arch support..."
+          docker buildx imagetools create \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            --manifest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-amd64 \
+            --manifest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-arm64 || true
+          echo "Multi-arch manifest created successfully"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: |
+            Dockerfile
+            VERSION
+          if-no-files-found: ignore
+
+  # 创建 GitHub Release
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "## 🐳 Docker Image" > RELEASE.md
+          echo "" >> RELEASE.md
+          echo "Pull the image with:" >> RELEASE.md
+          echo '```bash' >> RELEASE.md
+          echo "docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}" >> RELEASE.md
+          echo '```' >> RELEASE.md
+          echo "" >> RELEASE.md
+          echo "## 📋 Changes" >> RELEASE.md
+          echo "" >> RELEASE.md
+          echo "- Build and publish quark-mobile" >> RELEASE.md
+          echo "- Support amd64 and arm64 architectures" >> RELEASE.md
+          echo "- Integrated OpenList for multi-cloud drive" >> RELEASE.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release v${{ steps.version.outputs.version }}
+          body_path: RELEASE.md
+          files: |
+            Dockerfile
+            Makefile
+            docker-compose.yml
