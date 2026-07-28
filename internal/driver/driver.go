@@ -1,19 +1,7 @@
 package driver
 
-import (
-	"context"
-	"io"
+import "quark-mobile/internal/port"
 
-	"quark-mobile/internal/model"
-)
-
-type Driver interface {
-	Name() model.DriverType
-	List(ctx context.Context, path string) ([]model.FileInfo, error)
-	GetFile(ctx context.Context, path string) (*model.FileInfo, error)
-	ReadFile(ctx context.Context, path string) (io.ReadCloser, error)
-	WriteFile(ctx context.Context, path string, fileName string, reader io.Reader, size int64) error
-	InstantUpload(ctx context.Context, path string, fileName string, sha256 string, size int64) (bool, error)
-	DeleteFile(ctx context.Context, path string) error
-	Mkdir(ctx context.Context, path string) error
-}
+// 重新导出 port 包中的类型以保持向后兼容
+type Driver = port.Driver
+type FileInfo = port.FileInfo

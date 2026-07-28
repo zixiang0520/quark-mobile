@@ -5,42 +5,45 @@ import (
 	"fmt"
 	"io"
 
-	"quark-mobile/internal/driver"
 	"quark-mobile/internal/driver/openlist"
 	"quark-mobile/internal/model"
+	"quark-mobile/internal/port"
 
 	"github.com/spf13/viper"
 )
+
+// 确保实现了 port.Driver 接口
+var _ port.Driver = (*QuarkDriver)(nil)
 
 type QuarkDriver struct {
 	client    *openlist.Client
 	mountPath string
 }
 
-func NewQuarkDriver(client *openlist.Client) driver.Driver {
+func NewQuarkDriver(client *openlist.Client) *QuarkDriver {
 	return &QuarkDriver{
 		client:    client,
 		mountPath: viper.GetString("openlist.mounts.quark"),
 	}
 }
 
-func (q *QuarkDriver) Name() model.DriverType {
-	return model.DriverQuark
+func (q *QuarkDriver) Name() string {
+	return string(model.DriverQuark)
 }
 
-func (q *QuarkDriver) List(ctx context.Context, path string) ([]model.FileInfo, error) {
+func (q *QuarkDriver) List(ctx context.Context, path string) ([]port.FileInfo, error) {
 	fullPath := q.mountPath + path
 	return q.client.ListFiles(ctx, fullPath)
 }
 
-func (q *QuarkDriver) GetFile(ctx context.Context, path string) (*model.FileInfo, error) {
+func (q *QuarkDriver) GetFile(ctx context.Context, path string) (*port.FileInfo, error) {
 	fullPath := q.mountPath + path
 	fileInfo, err := q.client.GetFileInfo(ctx, fullPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.FileInfo{
+	return &port.FileInfo{
 		Name:   fileInfo.Name,
 		Path:   fileInfo.Path,
 		Size:   fileInfo.Size,

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"quark-mobile/internal/model"
+	"quark-mobile/internal/port"
 )
 
 type Client struct {
@@ -46,9 +46,9 @@ type APIListResponse struct {
 }
 
 type APIGetResponse struct {
-	Code int      `json:"code"`
-	Data FileInfo `json:"data"`
-	Msg  string   `json:"msg"`
+	Code int       `json:"code"`
+	Data FileInfo  `json:"data"`
+	Msg  string    `json:"msg"`
 }
 
 type EmptyResponse struct {
@@ -131,7 +131,7 @@ func (c *Client) Login(ctx context.Context, username, password string) error {
 
 // ListFiles 列举文件
 // POST /api/fs/list
-func (c *Client) ListFiles(ctx context.Context, path string) ([]model.FileInfo, error) {
+func (c *Client) ListFiles(ctx context.Context, path string) ([]port.FileInfo, error) {
 	body := map[string]interface{}{
 		"path":     path,
 		"password": "",
@@ -151,15 +151,14 @@ func (c *Client) ListFiles(ctx context.Context, path string) ([]model.FileInfo, 
 		return nil, fmt.Errorf("list failed: %s", listResp.Msg)
 	}
 
-	result := make([]model.FileInfo, 0, len(listResp.Data.Content))
+	result := make([]port.FileInfo, 0, len(listResp.Data.Content))
 	for _, f := range listResp.Data.Content {
-		result = append(result, model.FileInfo{
-			Name:     f.Name,
-			Path:     f.Path,
-			Size:     f.Size,
-			IsDir:    f.IsDir,
-			SHA256:   f.Sign,
-			Modified: f.Modified,
+		result = append(result, port.FileInfo{
+			Name:   f.Name,
+			Path:   f.Path,
+			Size:   f.Size,
+			IsDir:  f.IsDir,
+			SHA256: f.Sign,
 		})
 	}
 
@@ -195,11 +194,11 @@ func (c *Client) GetFileInfo(ctx context.Context, path string) (*FileInfo, error
 // POST /api/fs/copy
 func (c *Client) CopyFile(ctx context.Context, srcDir, srcName, dstDir string) error {
 	body := map[string]interface{}{
-		"src_dir":    srcDir,
-		"src_names":  []string{srcName},
-		"dst_dir":    dstDir,
-		"dst_names":  []string{srcName},
-		"passwords":  []string{""},
+		"src_dir":   srcDir,
+		"src_names": []string{srcName},
+		"dst_dir":   dstDir,
+		"dst_names": []string{srcName},
+		"passwords": []string{""},
 	}
 
 	respData, err := c.doRequest(ctx, "POST", "/api/fs/copy", body)

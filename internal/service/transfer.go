@@ -13,6 +13,7 @@ import (
 	"quark-mobile/internal/driver"
 	"quark-mobile/internal/driver/openlist"
 	"quark-mobile/internal/model"
+	"quark-mobile/internal/port"
 
 	"github.com/spf13/viper"
 )
@@ -189,7 +190,7 @@ func (s *TransferService) downloadAndUpload(
 }
 
 // GetFileList 获取网盘文件列表
-func (s *TransferService) GetFileList(ctx context.Context, driverType model.DriverType, path string) ([]model.FileInfo, error) {
+func (s *TransferService) GetFileList(ctx context.Context, driverType model.DriverType, path string) ([]port.FileInfo, error) {
 	drv, err := driver.GetDriver(driverType)
 	if err != nil {
 		return nil, err
