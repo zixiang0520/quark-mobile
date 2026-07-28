@@ -38,18 +38,7 @@ func (m *MobileDriver) List(ctx context.Context, path string) ([]port.FileInfo, 
 
 func (m *MobileDriver) GetFile(ctx context.Context, path string) (*port.FileInfo, error) {
 	fullPath := m.mountPath + path
-	fileInfo, err := m.client.GetFileInfo(ctx, fullPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &port.FileInfo{
-		Name:   fileInfo.Name,
-		Path:   fileInfo.Path,
-		Size:   fileInfo.Size,
-		IsDir:  fileInfo.IsDir,
-		SHA256: fileInfo.Sign,
-	}
+	return m.client.GetFileInfo(ctx, fullPath)
 }
 
 func (m *MobileDriver) ReadFile(ctx context.Context, path string) (io.ReadCloser, error) {

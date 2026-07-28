@@ -167,7 +167,38 @@ func (c *Client) ListFiles(ctx context.Context, path string) ([]port.FileInfo, e
 
 // GetFileInfo 获取文件详情
 // POST /api/fs/get
-func (c *Client) GetFileInfo(ctx context.Context, path string) (*FileInfo, error) {
+func (c *Client) GetFileInfo(ctx context.Context, path string) (*port.FileInfo, error) {
+	body := map[string]interface{}{
+		"path":     path,
+		"password": "",
+	}
+
+	respData, err := c.doRequest(ctx, "POST", "/api/fs/get", body)
+	if err != nil {
+		return nil, err
+	}
+
+	var getResp APIGetResponse
+	if err := json.Unmarshal(respData, &getResp); err != nil {
+		return nil, fmt.Errorf("parse get response: %w", err)
+	}
+
+	if getResp.Code != 0 {
+		return nil, fmt.Errorf("get failed: %s", getResp.Msg)
+	}
+
+	// 转换为 port.FileInfo
+	return &port.FileInfo{
+		Name:   getResp.Data.Name,
+		Path:   getResp.Data.Path,
+		Size:   getResp.Data.Size,
+		IsDir:  getResp.Data.IsDir,
+		SHA256: getResp.Data.Sign,
+	}, nil
+}
+
+// GetRawFileInfo 获取原始 OpenList 文件信息（包含 RawURL）
+func (c *Client) GetRawFileInfo(ctx context.Context, path string) (*FileInfo, error) {
 	body := map[string]interface{}{
 		"path":     path,
 		"password": "",
@@ -297,7 +328,7 @@ func (c *Client) RemoveFile(ctx context.Context, dir string, names []string) err
 
 // GetDownloadURL 获取下载直链
 func (c *Client) GetDownloadURL(ctx context.Context, path string) (string, error) {
-	fileInfo, err := c.GetFileInfo(ctx, path)
+	fileInfo, err := c.GetRawFileInfo(ctx, path)
 	if err != nil {
 		return "", err
 	}

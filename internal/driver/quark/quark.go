@@ -38,18 +38,7 @@ func (q *QuarkDriver) List(ctx context.Context, path string) ([]port.FileInfo, e
 
 func (q *QuarkDriver) GetFile(ctx context.Context, path string) (*port.FileInfo, error) {
 	fullPath := q.mountPath + path
-	fileInfo, err := q.client.GetFileInfo(ctx, fullPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &port.FileInfo{
-		Name:   fileInfo.Name,
-		Path:   fileInfo.Path,
-		Size:   fileInfo.Size,
-		IsDir:  fileInfo.IsDir,
-		SHA256: fileInfo.Sign,
-	}
+	return q.client.GetFileInfo(ctx, fullPath)
 }
 
 func (q *QuarkDriver) ReadFile(ctx context.Context, path string) (io.ReadCloser, error) {
