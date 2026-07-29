@@ -21,5 +21,5 @@ openlist:
 # 传输配置
 transfer:
   max_concurrent: 4
-  cache_dir: "/data/cache"
+  cache_dir: "data/cache"
   timeout: 60

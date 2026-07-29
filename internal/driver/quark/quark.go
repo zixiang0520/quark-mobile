@@ -15,15 +15,18 @@ import (
 var _ port.Driver = (*QuarkDriver)(nil)
 
 type QuarkDriver struct {
-	client    *openlist.Client
-	mountPath string
+	client *openlist.Client
 }
 
 func NewQuarkDriver(client *openlist.Client) *QuarkDriver {
 	return &QuarkDriver{
-		client:    client,
-		mountPath: viper.GetString("openlist.mounts.quark"),
+		client: client,
 	}
+}
+
+// mountPath 动态获取挂载路径
+func (q *QuarkDriver) mountPath() string {
+	return viper.GetString("openlist.mounts.quark")
 }
 
 func (q *QuarkDriver) Name() string {
@@ -31,17 +34,17 @@ func (q *QuarkDriver) Name() string {
 }
 
 func (q *QuarkDriver) List(ctx context.Context, path string) ([]port.FileInfo, error) {
-	fullPath := q.mountPath + path
+	fullPath := q.mountPath() + path
 	return q.client.ListFiles(ctx, fullPath)
 }
 
 func (q *QuarkDriver) GetFile(ctx context.Context, path string) (*port.FileInfo, error) {
-	fullPath := q.mountPath + path
+	fullPath := q.mountPath() + path
 	return q.client.GetFileInfo(ctx, fullPath)
 }
 
 func (q *QuarkDriver) ReadFile(ctx context.Context, path string) (io.ReadCloser, error) {
-	fullPath := q.mountPath + path
+	fullPath := q.mountPath() + path
 	rawURL, err := q.client.GetDownloadURL(ctx, fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("get download url: %w", err)
@@ -71,22 +74,22 @@ func (q *QuarkDriver) InstantUpload(ctx context.Context, path string, fileName s
 }
 
 func (q *QuarkDriver) DeleteFile(ctx context.Context, path string) error {
-	dir := q.mountPath
+	dir := q.mountPath()
 	return q.client.RemoveFile(ctx, dir, []string{path})
 }
 
 func (q *QuarkDriver) Mkdir(ctx context.Context, path string) error {
-	fullPath := q.mountPath + path
+	fullPath := q.mountPath() + path
 	return q.client.Mkdir(ctx, fullPath)
 }
 
 // GetMountPath 获取挂载路径
 func (q *QuarkDriver) GetMountPath() string {
-	return q.mountPath
+	return q.mountPath()
 }
 
 // CopyTo 复制到另一个驱动的挂载点
 func (q *QuarkDriver) CopyTo(ctx context.Context, srcPath, srcName, dstPath string) error {
-	srcDir := q.mountPath + srcPath
+	srcDir := q.mountPath() + srcPath
 	return q.client.CopyFile(ctx, srcDir, srcName, dstPath)
 }

@@ -15,15 +15,18 @@ import (
 var _ port.Driver = (*MobileDriver)(nil)
 
 type MobileDriver struct {
-	client    *openlist.Client
-	mountPath string
+	client *openlist.Client
 }
 
 func NewMobileDriver(client *openlist.Client) *MobileDriver {
 	return &MobileDriver{
-		client:    client,
-		mountPath: viper.GetString("openlist.mounts.mobile"),
+		client: client,
 	}
+}
+
+// mountPath 动态获取挂载路径
+func (m *MobileDriver) mountPath() string {
+	return viper.GetString("openlist.mounts.mobile")
 }
 
 func (m *MobileDriver) Name() string {
@@ -31,17 +34,17 @@ func (m *MobileDriver) Name() string {
 }
 
 func (m *MobileDriver) List(ctx context.Context, path string) ([]port.FileInfo, error) {
-	fullPath := m.mountPath + path
+	fullPath := m.mountPath() + path
 	return m.client.ListFiles(ctx, fullPath)
 }
 
 func (m *MobileDriver) GetFile(ctx context.Context, path string) (*port.FileInfo, error) {
-	fullPath := m.mountPath + path
+	fullPath := m.mountPath() + path
 	return m.client.GetFileInfo(ctx, fullPath)
 }
 
 func (m *MobileDriver) ReadFile(ctx context.Context, path string) (io.ReadCloser, error) {
-	fullPath := m.mountPath + path
+	fullPath := m.mountPath() + path
 	rawURL, err := m.client.GetDownloadURL(ctx, fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("get download url: %w", err)
@@ -69,20 +72,20 @@ func (m *MobileDriver) InstantUpload(ctx context.Context, path string, fileName 
 }
 
 func (m *MobileDriver) DeleteFile(ctx context.Context, path string) error {
-	dir := m.mountPath
+	dir := m.mountPath()
 	return m.client.RemoveFile(ctx, dir, []string{path})
 }
 
 func (m *MobileDriver) Mkdir(ctx context.Context, path string) error {
-	fullPath := m.mountPath + path
+	fullPath := m.mountPath() + path
 	return m.client.Mkdir(ctx, fullPath)
 }
 
 func (m *MobileDriver) GetMountPath() string {
-	return m.mountPath
+	return m.mountPath()
 }
 
 func (m *MobileDriver) CopyTo(ctx context.Context, srcPath, srcName, dstPath string) error {
-	srcDir := m.mountPath + srcPath
+	srcDir := m.mountPath() + srcPath
 	return m.client.CopyFile(ctx, srcDir, srcName, dstPath)
 }

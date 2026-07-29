@@ -1,12 +1,16 @@
 package api
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"quark-mobile/internal/config"
 	"quark-mobile/internal/driver"
+	"quark-mobile/internal/driver/openlist"
 	"quark-mobile/internal/model"
 	"quark-mobile/internal/service"
 	"quark-mobile/internal/task"
@@ -21,7 +25,27 @@ type Router struct {
 }
 
 func NewRouter(taskMgr *task.Manager, transferSvc *service.TransferService, cfgMgr *config.Manager) *Router {
-	settingsHdl := NewSettingsHandler(cfgMgr)
+	// 创建重新初始化 OpenList 客户端的回调函数
+	reinitFn := func(baseURL, username, password string) error {
+		ctx := context.Background()
+		olClient := openlist.NewClient(baseURL, "")
+
+		if password != "" {
+			if err := olClient.Login(ctx, username, password); err != nil {
+				return fmt.Errorf("login failed: %w", err)
+			}
+		}
+
+		// 更新 viper 中的 base_url
+		viper.Set("openlist.base_url", baseURL)
+
+		// 重新初始化驱动
+		driver.InitDrivers(olClient)
+
+		return nil
+	}
+
+	settingsHdl := NewSettingsHandler(cfgMgr, reinitFn)
 
 	r := &Router{
 		router:      gin.Default(),

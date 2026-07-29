@@ -5,18 +5,23 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"quark-mobile/internal/config"
 	"quark-mobile/internal/driver/openlist"
 )
 
+// ReinitFunc 重新初始化 OpenList 客户端和驱动的回调函数
+type ReinitFunc func(baseURL, username, password string) error
+
 // SettingsHandler 配置处理器
 type SettingsHandler struct {
-	cfgMgr *config.Manager
+	cfgMgr    *config.Manager
+	reinitFn  ReinitFunc
 }
 
 // NewSettingsHandler 创建配置处理器
-func NewSettingsHandler(cfgMgr *config.Manager) *SettingsHandler {
-	return &SettingsHandler{cfgMgr: cfgMgr}
+func NewSettingsHandler(cfgMgr *config.Manager, reinitFn ReinitFunc) *SettingsHandler {
+	return &SettingsHandler{cfgMgr: cfgMgr, reinitFn: reinitFn}
 }
 
 // Login 管理员登录
@@ -86,7 +91,66 @@ func (h *SettingsHandler) SaveSettings(c *gin.Context) {
 		return
 	}
 
+	// 同步更新 viper 配置，确保驱动能读取到最新值
+	h.syncToViper()
+
+	// 重新初始化 OpenList 客户端和驱动
+	if h.reinitFn != nil {
+		olConfig, err := h.cfgMgr.GetOpenListConfig()
+		if err == nil {
+			if err := h.reinitFn(olConfig.BaseURL, olConfig.Username, olConfig.Password); err != nil {
+				c.JSON(http.StatusOK, gin.H{
+					"message": "settings saved but reinit failed: " + err.Error(),
+				})
+				return
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "settings saved successfully"})
+}
+
+// syncToViper 将配置管理器中的数据同步到 viper
+func (h *SettingsHandler) syncToViper() {
+	cfg := h.cfgMgr.GetConfig()
+
+	if server, ok := cfg["server"].(map[string]interface{}); ok {
+		if port, ok := server["port"].(float64); ok {
+			viper.Set("server.port", int(port))
+		}
+		if mode, ok := server["mode"].(string); ok {
+			viper.Set("server.mode", mode)
+		}
+	}
+
+	if ol, ok := cfg["openlist"].(map[string]interface{}); ok {
+		if baseURL, ok := ol["base_url"].(string); ok {
+			viper.Set("openlist.base_url", baseURL)
+		}
+		if username, ok := ol["username"].(string); ok {
+			viper.Set("openlist.username", username)
+		}
+		if mounts, ok := ol["mounts"].(map[string]interface{}); ok {
+			if quark, ok := mounts["quark"].(string); ok {
+				viper.Set("openlist.mounts.quark", quark)
+			}
+			if mobile, ok := mounts["mobile"].(string); ok {
+				viper.Set("openlist.mounts.mobile", mobile)
+			}
+		}
+	}
+
+	if transfer, ok := cfg["transfer"].(map[string]interface{}); ok {
+		if maxConcurrent, ok := transfer["max_concurrent"].(float64); ok {
+			viper.Set("transfer.max_concurrent", int(maxConcurrent))
+		}
+		if cacheDir, ok := transfer["cache_dir"].(string); ok {
+			viper.Set("transfer.cache_dir", cacheDir)
+		}
+		if timeout, ok := transfer["timeout"].(float64); ok {
+			viper.Set("transfer.timeout", int(timeout))
+		}
+	}
 }
 
 // TestConnection 测试 OpenList 连接

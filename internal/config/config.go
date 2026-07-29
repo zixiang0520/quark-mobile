@@ -5,41 +5,43 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 // Config 应用配置结构
 type Config struct {
-	Server   ServerConfig   `json:"server"`
-	OpenList OpenListConfig `json:"openlist"`
-	Transfer TransferConfig `json:"transfer"`
+	Server   ServerConfig   `json:"server" yaml:"server"`
+	OpenList OpenListConfig `json:"openlist" yaml:"openlist"`
+	Transfer TransferConfig `json:"transfer" yaml:"transfer"`
 }
 
 type ServerConfig struct {
-	Port int    `json:"port"`
-	Mode string `json:"mode"`
+	Port int    `json:"port" yaml:"port"`
+	Mode string `json:"mode" yaml:"mode"`
 }
 
 type OpenListConfig struct {
-	BaseURL  string `json:"base_url"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	BaseURL  string `json:"base_url" yaml:"base_url"`
+	Username string `json:"username" yaml:"username"`
+	Password string `json:"password" yaml:"password"`
 	Mounts   struct {
-		Quark  string `json:"quark"`
-		Mobile string `json:"mobile"`
-	} `json:"mounts"`
+		Quark  string `json:"quark" yaml:"quark"`
+		Mobile string `json:"mobile" yaml:"mobile"`
+	} `json:"mounts" yaml:"mounts"`
 }
 
 type TransferConfig struct {
-	MaxConcurrent int    `json:"max_concurrent"`
-	CacheDir      string `json:"cache_dir"`
-	Timeout       int    `json:"timeout"`
+	MaxConcurrent int    `json:"max_concurrent" yaml:"max_concurrent"`
+	CacheDir      string `json:"cache_dir" yaml:"cache_dir"`
+	Timeout       int    `json:"timeout" yaml:"timeout"`
 }
 
 // Session 会话管理
@@ -72,7 +74,7 @@ var defaultConfig = &Config{
 	},
 	Transfer: TransferConfig{
 		MaxConcurrent: 4,
-		CacheDir:      "/data/cache",
+		CacheDir:      "data/cache",
 		Timeout:       60,
 	},
 }
@@ -90,12 +92,12 @@ func NewManager(configPath string) *Manager {
 		sessions:  make(map[string]*Session),
 	}
 
-	// 检查配置文件路径是否可写，否则使用 /data 目录
+	// 检查配置文件路径是否可写，否则使用 data 目录
 	if !m.canWrite(configPath) {
-		m.writePath = "/data/config.yaml"
+		m.writePath = "data/config.yaml"
 		// 如果原始配置文件存在，复制它
 		if data, err := os.ReadFile(configPath); err == nil {
-			os.MkdirAll("/data", 0755)
+			os.MkdirAll("data", 0755)
 			os.WriteFile(m.writePath, data, 0600)
 		}
 	}
@@ -134,13 +136,14 @@ func (m *Manager) canWrite(path string) bool {
 
 // loadOrCreateEncryptionKey 加载或创建加密密钥
 func (m *Manager) loadOrCreateEncryptionKey() []byte {
-	// 使用 /data 目录存储密钥（有写入权限）
-	keyDir := "/data"
-	keyFile := filepath.Join(keyDir, ".encryption_key")
+	// 使用 data 目录存储密钥（有写入权限）
+	keyDir := "data"
 	
 	// 确保目录存在
 	os.MkdirAll(keyDir, 0755)
 	
+	keyFile := filepath.Join(keyDir, ".encryption_key")
+
 	data, err := os.ReadFile(keyFile)
 	if err == nil && len(data) == 32 {
 		return data
@@ -161,8 +164,12 @@ func (m *Manager) loadOrCreateEncryptionKey() []byte {
 
 // loadOrCreateAdminPassword 加载或创建管理员密码
 func (m *Manager) loadOrCreateAdminPassword() string {
-	// 使用 /data 目录存储密码（有写入权限）
-	passDir := "/data"
+	// 使用 data 目录存储密码（有写入权限）
+	passDir := "data"
+	
+	// 确保目录存在
+	os.MkdirAll(passDir, 0755)
+	
 	passFile := filepath.Join(passDir, ".admin_pass")
 	
 	data, err := os.ReadFile(passFile)
@@ -182,19 +189,57 @@ func (m *Manager) loadOrCreateAdminPassword() string {
 	return hashedPass
 }
 
-// loadConfig 加载配置
+// loadConfig 加载配置（使用 viper 支持 YAML/JSON 等多种格式）
 func (m *Manager) loadConfig() *Config {
-	data, err := os.ReadFile(m.filePath)
-	if err != nil {
+	v := viper.New()
+	v.SetConfigFile(m.filePath)
+	v.SetConfigType("yaml")
+
+	if err := v.ReadInConfig(); err != nil {
 		return defaultConfig
 	}
 
-	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		return defaultConfig
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: v.GetInt("server.port"),
+			Mode: v.GetString("server.mode"),
+		},
+		OpenList: OpenListConfig{
+			BaseURL:  v.GetString("openlist.base_url"),
+			Username: v.GetString("openlist.username"),
+			Password: v.GetString("openlist.password"),
+		},
+		Transfer: TransferConfig{
+			MaxConcurrent: v.GetInt("transfer.max_concurrent"),
+			CacheDir:      v.GetString("transfer.cache_dir"),
+			Timeout:       v.GetInt("transfer.timeout"),
+		},
 	}
 
-	return &cfg
+	cfg.OpenList.Mounts.Quark = v.GetString("openlist.mounts.quark")
+	cfg.OpenList.Mounts.Mobile = v.GetString("openlist.mounts.mobile")
+
+	// 如果配置为空，使用默认值
+	if cfg.Server.Port == 0 {
+		cfg.Server.Port = defaultConfig.Server.Port
+	}
+	if cfg.Server.Mode == "" {
+		cfg.Server.Mode = defaultConfig.Server.Mode
+	}
+	if cfg.OpenList.BaseURL == "" {
+		cfg.OpenList.BaseURL = defaultConfig.OpenList.BaseURL
+	}
+	if cfg.Transfer.MaxConcurrent == 0 {
+		cfg.Transfer.MaxConcurrent = defaultConfig.Transfer.MaxConcurrent
+	}
+	if cfg.Transfer.CacheDir == "" {
+		cfg.Transfer.CacheDir = defaultConfig.Transfer.CacheDir
+	}
+	if cfg.Transfer.Timeout == 0 {
+		cfg.Transfer.Timeout = defaultConfig.Transfer.Timeout
+	}
+
+	return cfg
 }
 
 // GetConfig 获取当前配置（密码脱敏）
@@ -234,9 +279,11 @@ func (m *Manager) GetOpenListConfig() (OpenListConfig, error) {
 	if password != "" {
 		decrypted, err := m.decrypt(password)
 		if err != nil {
-			return OpenListConfig{}, fmt.Errorf("decrypt password: %w", err)
+			// 解密失败，说明密码是明文存储的，直接使用
+			// 这是向后兼容的处理方式
+		} else {
+			password = decrypted
 		}
-		password = decrypted
 	}
 
 	cfg := m.config.OpenList
@@ -279,9 +326,9 @@ func (m *Manager) SaveConfig(data map[string]interface{}) error {
 	return m.saveToFile()
 }
 
-// saveToFile 保存配置到文件
+// saveToFile 保存配置到文件（YAML 格式）
 func (m *Manager) saveToFile() error {
-	data, err := json.MarshalIndent(m.config, "", "  ")
+	data, err := yaml.Marshal(m.config)
 	if err != nil {
 		return err
 	}
@@ -402,8 +449,8 @@ func (m *Manager) ChangePassword(oldPass, newPass string) error {
 	hashedPass := hashPassword(newPass)
 	m.adminPass = hashedPass
 
-	// 使用 /data 目录存储密码
-	passFile := filepath.Join("/data", ".admin_pass")
+	// 使用 data 目录存储密码
+	passFile := filepath.Join("data", ".admin_pass")
 	return os.WriteFile(passFile, []byte(hashedPass), 0600)
 }
 

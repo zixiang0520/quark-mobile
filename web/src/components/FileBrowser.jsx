@@ -9,7 +9,12 @@ function FileBrowser({ title, driver, onDriverChange, drivers }) {
   const loadFiles = useCallback(() => {
     if (!driver) return
     setLoading(true)
-    fetch(`/api/files/${driver}?path=${encodeURIComponent(path)}`)
+    fetch(`/api/files/${driver}?path=${encodeURIComponent(path)}`, {
+      headers: {
+        'X-Session-ID': localStorage.getItem('session_id') || '',
+      },
+      credentials: 'include',
+    })
       .then(res => res.json())
       .then(data => setFiles(data.files || []))
       .catch(err => console.error('Failed to load files:', err))

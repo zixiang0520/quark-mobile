@@ -19,9 +19,9 @@ type Driver interface {
 
 // FileInfo 文件信息结构
 type FileInfo struct {
-	Name   string
-	Path   string
-	Size   int64
-	IsDir  bool
-	SHA256 string
+	Name   string `json:"name"`
+	Path   string `json:"path"`
+	Size   int64  `json:"size"`
+	IsDir  bool   `json:"is_dir"`
+	SHA256 string `json:"sha256,omitempty"`
 }
