@@ -60,7 +60,11 @@ func NewClient(baseURL string, token string) *Client {
 	return &Client{
 		BaseURL:    baseURL,
 		Token:      token,
-		HTTPClient: &http.Client{Timeout: 60 * time.Second},
+		HTTPClient: &http.Client{
+			// 不设置全局超时，由 context 控制生命周期
+			// API 调用通过 doRequest 使用 context deadline
+			// 文件下载通过 ReadFile 传入更长的 context
+		},
 	}
 }
 

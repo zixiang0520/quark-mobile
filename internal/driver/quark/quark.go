@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/spf13/viper"
 	"quark-mobile/internal/driver/openlist"
@@ -50,7 +51,13 @@ func (q *QuarkDriver) ReadFile(ctx context.Context, path string) (io.ReadCloser,
 		return nil, fmt.Errorf("get download url: %w", err)
 	}
 
-	resp, err := q.client.HTTPClient.Get(rawURL)
+	// 使用 context 发起下载请求，支持大文件的长时间传输
+	req, err := http.NewRequestWithContext(ctx, "GET", rawURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create download request: %w", err)
+	}
+
+	resp, err := q.client.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("download file: %w", err)
 	}
