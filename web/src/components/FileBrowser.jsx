@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 
-function FileBrowser({ title, driver, onDriverChange, drivers }) {
+function FileBrowser({ title, driver, onDriverChange, drivers, onFileSelect, selectedInfo, selectMode }) {
   const [path, setPath] = useState('/')
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
@@ -25,11 +25,42 @@ function FileBrowser({ title, driver, onDriverChange, drivers }) {
     loadFiles()
   }, [loadFiles])
 
+  const getFullPath = (file) => {
+    if (file.is_dir) {
+      const sep = path.endsWith('/') ? '' : '/'
+      return `${path}${sep}${file.name}`
+    }
+    return file.path || `${path}/${file.name}`
+  }
+
   const handleFileClick = (file) => {
     if (file.is_dir) {
-      setPath(file.path)
+      setPath(getFullPath(file))
     } else {
-      setSelectedFile(file)
+      selectFile(file)
+    }
+  }
+
+  const selectFile = (file) => {
+    const fullPath = getFullPath(file)
+    setSelectedFile(file)
+    if (onFileSelect) {
+      onFileSelect({
+        name: file.name,
+        path: fullPath,
+        size: file.size,
+        isDir: file.is_dir,
+      })
+    }
+  }
+
+  const handleSelectCurrentDir = () => {
+    if (onFileSelect) {
+      onFileSelect({
+        name: path.split('/').pop() || '/',
+        path: path,
+        isDir: true,
+      })
     }
   }
 
@@ -37,18 +68,37 @@ function FileBrowser({ title, driver, onDriverChange, drivers }) {
     const parts = path.split('/').filter(Boolean)
     parts.pop()
     setPath('/' + parts.join('/'))
+    setSelectedFile(null)
   }
 
   const formatSize = (bytes) => {
+    if (!bytes || bytes === 0) return ''
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
     if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
     return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
   }
 
+  const isSelected = (file) => {
+    if (!selectedInfo) return false
+    return selectedInfo.path === getFullPath(file)
+  }
+
   return (
     <div className="file-browser">
-      <h3>{title}</h3>
+      <div className="browser-header">
+        <h3>{title}</h3>
+        {selectedInfo && (
+          <div className="selected-indicator">
+            <span className="selected-badge">
+              {selectMode === 'source' ? '📎 已选源' : '📍 已选目标'}
+            </span>
+            <span className="selected-name" title={selectedInfo.path}>
+              {selectedInfo.name}
+            </span>
+          </div>
+        )}
+      </div>
 
       <select
         className="driver-select"
@@ -77,9 +127,11 @@ function FileBrowser({ title, driver, onDriverChange, drivers }) {
         />
       </div>
 
-      {selectedFile && (
-        <div style={{ padding: '8px', background: '#e8f5e9', borderRadius: '8px', marginBottom: '12px' }}>
-          <strong>已选文件:</strong> {selectedFile.name} ({formatSize(selectedFile.size)})
+      {selectMode === 'target' && (
+        <div className="current-dir-actions">
+          <button className="btn-select-dir" onClick={handleSelectCurrentDir}>
+            📌 选择此目录作为目标
+          </button>
         </div>
       )}
 
@@ -92,16 +144,27 @@ function FileBrowser({ title, driver, onDriverChange, drivers }) {
           files.map((file, idx) => (
             <div
               key={idx}
-              className="file-item"
+              className={`file-item ${isSelected(file) ? 'selected' : ''}`}
               onClick={() => handleFileClick(file)}
             >
               <span className="file-icon">{file.is_dir ? '📁' : '📄'}</span>
               <span className="file-name">{file.name}</span>
               {!file.is_dir && <span className="file-size">{formatSize(file.size)}</span>}
+              {!file.is_dir && (
+                <span className="file-action">
+                  {isSelected(file) ? '✓ 已选' : '选择'}
+                </span>
+              )}
             </div>
           ))
         )}
       </div>
+
+      {selectedFile && !selectedFile.is_dir && (
+        <div className="selected-file-bar">
+          <span>✅ 已选择: <strong>{selectedFile.name}</strong> ({formatSize(selectedFile.size)})</span>
+        </div>
+      )}
     </div>
   )
 }

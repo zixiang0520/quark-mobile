@@ -4,6 +4,7 @@ import os
 SERVER_HOST = "36.140.147.210"
 SERVER_USER = "root"
 SERVER_PASS = "ZXliukai1."
+REMOTE_DIR = "/opt/quark-mobile"
 
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -16,45 +17,44 @@ def run_cmd(cmd):
     err = stderr.read().decode("utf-8", errors="replace")
     return out, err, exit_code
 
-# 直接复制文件到容器内部的 /app/web/dist
-local_dist = r"d:\quark-mobile\web\dist"
-
 # 创建临时目录存放新文件
 run_cmd("rm -rf /tmp/web_new && mkdir -p /tmp/web_new/assets")
 
+# 上传新文件
+local_dist = r"d:\quark-mobile\web\dist"
 sftp = client.open_sftp()
+
 sftp.put(os.path.join(local_dist, "index.html"), "/tmp/web_new/index.html")
-sftp.put(os.path.join(local_dist, "assets", "index-D8kej4QG.js"), "/tmp/web_new/assets/index-D8kej4QG.js")
-sftp.put(os.path.join(local_dist, "assets", "index-tTa6sWcR.css"), "/tmp/web_new/assets/index-tTa6sWcR.css")
+sftp.put(os.path.join(local_dist, "assets", "index-Da1cdxsL.js"), "/tmp/web_new/assets/index-Da1cdxsL.js")
+sftp.put(os.path.join(local_dist, "assets", "index-fZp6Y3F6.css"), "/tmp/web_new/assets/index-fZp6Y3F6.css")
 sftp.close()
 
-# 从宿主机复制到容器内
+# 复制到容器
 print("复制文件到容器...")
 run_cmd("docker cp /tmp/web_new/. quark-mobile:/app/web/dist/")
 run_cmd("docker cp /tmp/web_new/assets/. quark-mobile:/app/web/dist/assets/")
 
-# 清理旧文件
-print("清理容器内旧的资源文件...")
-run_cmd("docker exec quark-mobile rm -f /app/web/dist/assets/index-CeefqwZ2.js")
-run_cmd("docker exec quark-mobile rm -f /app/web/dist/assets/index-CqiFqdZg.js")
-run_cmd("docker exec quark-mobile rm -f /app/web/dist/assets/index-I4wjT48d.css")
+# 清理旧的资源文件
+print("清理旧资源...")
+for old_file in ["index-CeefqwZ2.js", "index-CqiFqdZg.js", "index-I4wjT48d.css", "index-D8kej4QG.js", "index-tTa6sWcR.css"]:
+    run_cmd(f"docker exec quark-mobile rm -f /app/web/dist/assets/{old_file}")
 
 # 验证
 print("\n验证容器内文件:")
-out, _, _ = run_cmd("docker exec quark-mobile ls -la /app/web/dist/")
-print(out)
-out, _, _ = run_cmd("docker exec quark-mobile ls -la /app/web/dist/assets/")
+out, _, _ = run_cmd("docker exec quark-mobile ls /app/web/dist/assets/")
 print(out)
 
 # HTTP 验证
-print("HTTP 验证:")
+print("\nHTTP 验证:")
 out, _, _ = run_cmd("curl -s http://localhost:18900/ | head -15")
 print(out)
 
-# 验证新 JS 文件可访问
-print("新 JS 文件验证:")
-out, _, _ = run_cmd("curl -s -o /dev/null -w '%{http_code}' http://localhost:18900/assets/index-D8kej4QG.js")
-print(f"HTTP {out}")
+# 验证新 JS
+out, _, _ = run_cmd("curl -s -o /dev/null -w '%{http_code}' http://localhost:18900/assets/index-Da1cdxsL.js")
+print(f"JS 文件 HTTP: {out}")
+
+out, _, _ = run_cmd("curl -s -o /dev/null -w '%{http_code}' http://localhost:18900/assets/index-fZp6Y3F6.css")
+print(f"CSS 文件 HTTP: {out}")
 
 client.close()
 print("\n✅ 部署完成！")

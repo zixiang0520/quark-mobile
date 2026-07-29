@@ -298,3 +298,197 @@ body {
     gap: 12px;
   }
 }
+
+/* Browser header with selection indicator */
+.browser-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selected-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e8f5e9;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.selected-indicator .selected-badge {
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+.selected-indicator .selected-name {
+  color: #555;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* File item selected state */
+.file-item.selected {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-left: 3px solid #667eea;
+}
+
+.file-item.selected .file-name {
+  color: #667eea;
+  font-weight: 500;
+}
+
+.file-action {
+  color: #667eea;
+  font-size: 12px;
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.file-item.selected .file-action {
+  background: #667eea;
+  color: white;
+}
+
+/* Selected file bar */
+.selected-file-bar {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #2e7d32;
+  text-align: center;
+}
+
+/* Target dir selection */
+.current-dir-actions {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.btn-select-dir {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-select-dir:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+}
+
+/* Arrow area with quick transfer button */
+.arrow-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 80px;
+}
+
+.btn-quick-transfer {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  font-size: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-quick-transfer:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+}
+
+/* Transfer panel improvements */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.btn-text {
+  background: none;
+  border: 1px solid #ddd;
+  color: #667eea;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.btn-text:hover {
+  background: #f0f0ff;
+}
+
+.selection-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.selection-item {
+  flex: 1;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.selection-label {
+  display: block;
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.selection-value {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  word-break: break-all;
+}
+
+.selection-path {
+  display: block;
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+.selection-arrow {
+  font-size: 24px;
+  color: #667eea;
+  font-weight: bold;
+}
+
+.transfer-form {
+  border-top: 1px solid #eee;
+  padding-top: 16px;
+}

@@ -14,16 +14,17 @@ function App() {
   const [sourceDriver, setSourceDriver] = useState('quark')
   const [targetDriver, setTargetDriver] = useState('mobile')
 
+  const [selectedSource, setSelectedSource] = useState(null)
+  const [selectedTarget, setSelectedTarget] = useState(null)
+
   const getHeaders = () => ({
     'Content-Type': 'application/json',
     'X-Session-ID': localStorage.getItem('session_id') || '',
   })
 
   useEffect(() => {
-    // 检查本地是否有 session
     const sessionId = localStorage.getItem('session_id')
     if (sessionId) {
-      // 验证 session 是否有效
       fetch('/api/settings', {
         headers: getHeaders(),
         credentials: 'include',
@@ -56,25 +57,29 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated) return
 
-    fetch('/api/tasks', {
-      headers: getHeaders(),
-      credentials: 'include',
-    })
-      .then(res => res.json())
-      .then(data => setTasks(data.tasks || []))
-      .catch(err => console.error('Failed to load tasks:', err))
-
-    const interval = setInterval(() => {
+    const loadTasks = () => {
       fetch('/api/tasks', {
         headers: getHeaders(),
         credentials: 'include',
       })
         .then(res => res.json())
         .then(data => setTasks(data.tasks || []))
-    }, 3000)
+    }
 
+    loadTasks()
+    const interval = setInterval(loadTasks, 3000)
     return () => clearInterval(interval)
   }, [isAuthenticated])
+
+  const handleSourceSelect = (fileInfo) => {
+    if (!fileInfo.isDir) {
+      setSelectedSource(fileInfo)
+    }
+  }
+
+  const handleTargetSelect = (dirInfo) => {
+    setSelectedTarget(dirInfo)
+  }
 
   const handleTransfer = useCallback((sourcePath, targetPath, fileName) => {
     fetch('/api/transfer', {
@@ -90,7 +95,10 @@ function App() {
       }),
     })
       .then(res => res.json())
-      .then(() => {
+      .then(data => {
+        if (data.task) {
+          setSelectedSource(null)
+        }
         fetch('/api/tasks', {
           headers: getHeaders(),
           credentials: 'include',
@@ -100,6 +108,11 @@ function App() {
       })
       .catch(err => console.error('Transfer failed:', err))
   }, [sourceDriver, targetDriver])
+
+  const handleQuickTransfer = useCallback(() => {
+    if (!selectedSource || !selectedTarget) return
+    handleTransfer(selectedSource.path, selectedTarget.path, selectedSource.name)
+  }, [selectedSource, selectedTarget, handleTransfer])
 
   const handleCancelTask = useCallback((taskId) => {
     fetch(`/api/tasks/${taskId}`, {
@@ -127,15 +140,15 @@ function App() {
     setShowBinding(false)
   }
 
-  // 未登录显示登录页面
   if (!isAuthenticated) {
     return <LoginPage onLogin={handleLogin} />
   }
 
-  // 显示绑定配置页面
   if (showBinding) {
     return <BindingPage onLogout={handleLogout} onBack={() => setShowBinding(false)} />
   }
+
+  const canQuickTransfer = selectedSource && selectedTarget && !selectedSource.isDir && selectedTarget.isDir
 
   return (
     <div className="app">
@@ -162,24 +175,40 @@ function App() {
       <main className="app-main">
         <div className="panels-row">
           <FileBrowser
-            title="源网盘"
+            title="📤 源网盘 (选择文件)"
             driver={sourceDriver}
             onDriverChange={setSourceDriver}
             drivers={drivers}
+            onFileSelect={handleSourceSelect}
+            selectedInfo={selectedSource}
+            selectMode="source"
           />
-          <div className="arrow">→</div>
+          <div className="arrow-area">
+            <div className="arrow">→</div>
+            {canQuickTransfer && (
+              <button className="btn btn-quick-transfer" onClick={handleQuickTransfer}>
+                ⚡ 一键传输
+              </button>
+            )}
+          </div>
           <FileBrowser
-            title="目标网盘"
+            title="📥 目标网盘 (选择目录)"
             driver={targetDriver}
             onDriverChange={setTargetDriver}
             drivers={drivers}
+            onFileSelect={handleTargetSelect}
+            selectedInfo={selectedTarget}
+            selectMode="target"
           />
         </div>
 
         <TransferPanel
           sourceDriver={sourceDriver}
           targetDriver={targetDriver}
+          selectedSource={selectedSource}
+          selectedTarget={selectedTarget}
           onTransfer={handleTransfer}
+          onClearSelection={() => { setSelectedSource(null); setSelectedTarget(null); }}
         />
 
         <TaskList tasks={tasks} onCancel={handleCancelTask} />
