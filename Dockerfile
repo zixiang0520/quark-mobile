@@ -52,9 +52,9 @@ COPY --from=backend --chown=appuser:appgroup /app/server .
 COPY --from=backend --chown=appuser:appgroup /app/web ./web
 COPY --from=backend --chown=appuser:appgroup /app/config.yaml .
 
-# 创建数据目录
-RUN mkdir -p /data/cache && \
-    chown -R appuser:appgroup /data
+# 创建数据目录（用于存储加密密钥、管理员密码和缓存）
+RUN mkdir -p /app/data/cache && \
+    chown -R appuser:appgroup /app/data
 
 # 切换到非 root 用户
 USER appuser

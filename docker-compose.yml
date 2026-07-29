@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   quark-mobile:
-    # 使用远程镜像
-    image: ghcr.io/zixiang0520/quark-mobile:latest
+    build: .
+    image: quark-mobile:latest
     container_name: quark-mobile
     
     # 端口映射
@@ -12,23 +10,18 @@ services:
     
     # 数据持久化
     volumes:
-      - quark-mobile-data:/data
+      - quark-mobile-data:/app/data
     
     # 环境变量配置
     environment:
-      # 服务器配置
       - CONFIG_PATH=/app/config.yaml
       - GIN_MODE=release
       - TZ=Asia/Shanghai
-      
-      # OpenList 连接配置
       - OL_BASE_URL=http://vip.dsj6.cn:5244
       - OL_USERNAME=lk0520
       - OL_PASSWORD=ZXliukai123
-      
-      # 挂载路径
-      - OL_MOUNT_QUARK=/quark
-      - OL_MOUNT_MOBILE=/mobile
+      - OL_MOUNT_QUARK=/移动云盘
+      - OL_MOUNT_MOBILE=/移动云盘
     
     # 自动重启
     restart: unless-stopped
