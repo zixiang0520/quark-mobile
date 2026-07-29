@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import './BindingPage.css'
 
-function BindingPage({ onLogout }) {
+function BindingPage({ onLogout, onBack }) {
   const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -186,7 +186,12 @@ function BindingPage({ onLogout }) {
     <div className="binding-container">
       {/* 头部 */}
       <div className="binding-header">
-        <h1>🔗 连接配置</h1>
+        <div className="header-left">
+          <button className="btn-back" onClick={onBack}>
+            ← 返回
+          </button>
+          <h1>🔗 连接配置</h1>
+        </div>
         <div className="header-actions">
           <button className="btn-text" onClick={() => setChangingPassword(!changingPassword)}>
             {changingPassword ? '取消' : '修改密码'}

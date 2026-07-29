@@ -72,6 +72,28 @@
   margin-bottom: 24px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-back {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  color: #666;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
 .binding-header h1 {
   color: #333;
   font-size: 24px;

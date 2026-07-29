@@ -134,7 +134,7 @@ function App() {
 
   // 显示绑定配置页面
   if (showBinding) {
-    return <BindingPage onLogout={handleLogout} />
+    return <BindingPage onLogout={handleLogout} onBack={() => setShowBinding(false)} />
   }
 
   return (
